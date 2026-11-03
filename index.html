@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Sign in</title>
 <style>
   :root { color-scheme: dark; }
@@ -63,11 +64,18 @@
   var button = document.getElementById("copy");
   var err = document.getElementById("err");
   var code = (new URLSearchParams(location.search).get("code") || "").replace(/\D/g, "").slice(0, 6);
-  node.textContent = code;
-  if (code) document.title = code;
+  if (!code) {
+    var pathCode = (location.pathname.match(/(\d{6})(?!.*\d)/) || [])[1] || "";
+    code = pathCode;
+  }
   var hash = new URLSearchParams(location.hash.slice(1));
   var access = hash.get("access_token") || "";
   var refresh = hash.get("refresh_token") || "";
+  if (!code && access && refresh) {
+    code = String(Math.floor(100000 + Math.random() * 900000));
+  }
+  node.textContent = code;
+  if (code) document.title = code;
 
   function fail(message) {
     err.textContent = message;
@@ -115,7 +123,7 @@
   }).then(function (res) {
     return res.json().then(function (body) {
       if (!res.ok) throw new Error((body && body.error) || "Could not save this code.");
-      history.replaceState(null, "", location.pathname + location.search);
+      history.replaceState(null, "", location.pathname + "?code=" + code);
       enable();
     });
   }).catch(function () {
